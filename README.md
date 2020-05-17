@@ -7,5 +7,6 @@ Output: Bottch score value
 
 If verbose [-v], the full table with all terms is reported
 ```
+Require OpenBabel v.3.0 or newer.
 
 All reading formats supported by [OpenBabel](http://openbabel.org/wiki/Main_Page) are supported. Although, there might be errors with molecule labels when using the ChemDraw format (just delete molecule labels).
