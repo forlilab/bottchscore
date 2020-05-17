@@ -1,7 +1,8 @@
 # bottchscore
-Calculate Böttcher score on small molecules as described by [Böttcher (J.Chem.Inf.Mod. 2016)](https://pubs.acs.org/doi/pdf/10.1021/acs.jcim.5b00723)
+Calculate Böttcher score on small molecules as described in [Demoret et al. (ChemRxiv 2020)](https://chemrxiv.org/articles/Synthesis_and_Mechanistic_Interrogation_of_Ginkgo_biloba_Chemical_Space_en_route_to_-Bilobalide/12132939) according to the definition from [Böttcher, J.Chem.Inf.Mod. 2016](https://pubs.acs.org/doi/pdf/10.1021/acs.jcim.5b00723)
 
-```Usage: ./bottchinator2000_v3.py molfile.ext   [ all supported OB types are acceptable ] [-v]
+```
+Usage: ./bottchinator2000_v3.py molfile.ext   [ all supported OB types are acceptable ] [-v]
 Output: Bottch score value
 
 If verbose [-v], the full table with all terms is reported
