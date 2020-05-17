@@ -1,1 +1,1 @@
-openbabel==3.*
+"openbabel=>3.0"
