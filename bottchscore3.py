@@ -52,11 +52,15 @@ class BottchScore:
         self._mesomery_patterns = {
                 # SMARTS_pattern : [equivalent atoms idx list, contribution ]
                 '[$([#8;X1])]=*-[$([#8;X1])]' : [ [[0,2]], 1.5], # carboxylate, nitrate
+                #'[$([#7;X2](=*)(-*=*-*))]': [ [[0,1],[0,2],[2,3],[3,4]], 1.5 ],
+                '[$([#7;X2])](=*)(-*=[$(*-*)])': [ [[0,1],[0,2],[2,3]], 1.5 ],
+
 
                 #'[$([#8;X1])]~*~[$([#8;X1])]' : [ [0,2], 1.5], # carboxylate, nitrate
                 #'[$([#8;X1])]~*~[$([#8;X2,H1])]' : [ [0,2], 1.5], # carboxylate, nitrate
                 #'[$([#7;X2](=*)[*=*])]'
-                '[$([#7;X2](=*)(-*=*(-*)))]' :  [ [[]],  1.5 ], # guanidine, azire
+                # '[$([#7;X2](=*)(-*=*(-*)))]' :  [ [[]],  1.5 ], # guanidine, azire
+
                     
                 #'[CH2X4]' # histidine
                 '[#6X3]1:' # imidazole
@@ -110,6 +114,7 @@ class BottchScore:
             if self.debug: print("DEBUG> Matched pattern |%s|"% patt)
             found = [list(x) for x in matcher.GetUMapList()]
             for f in found:
+                if self.debug: print("DEBUG> found pattern: ",f)
                 for pair in idx_pairs:
                     for idx in pair:
                         if self.debug: print("DEBUG> Assigning mesomery:",f, "->", f[idx])
