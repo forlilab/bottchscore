@@ -2,10 +2,18 @@
 Calculate Böttcher score on small molecules as described in [Demoret et al. (ChemRxiv 2020)](https://chemrxiv.org/articles/Synthesis_and_Mechanistic_Interrogation_of_Ginkgo_biloba_Chemical_Space_en_route_to_-Bilobalide/12132939) according to the definition from [Böttcher, J.Chem.Inf.Mod. 2016](https://pubs.acs.org/doi/pdf/10.1021/acs.jcim.5b00723)
 
 ```
-Usage: ./bottchscore3.py molfile.ext   [ all supported OB types are acceptable ] [-v]
-Output: Bottch score value
+usage: bottchscore3.py [-h] -i filename.ext [-m] [-p] [-v]
 
-If verbose [-v], the full table with all terms is reported
+Tool to calculate Böttcher score on small molecules.
+
+optional arguments:
+  -h, --help       show this help message and exit
+  -i filename.ext  input structure; support all input formats supported by OB,
+                   including multi-structure formats
+  -m               disable mesomeric effect estimate
+  -p               generate PNG image of the structure
+  -v               verbose mode; print the full table of the terms used to
+                   estimate the score, as described in the paper
 ```
 Require OpenBabel v.3.0 or newer.
 
