@@ -30,7 +30,6 @@ from math import log
 
 # TODO 
 # - missing atropisomers (https://en.wikipedia.org/wiki/Atropisomer)
-# - according to the original implementation, t-butyl and isopropyl have sam complexiy?
 
 
 class BottchScore:
@@ -49,35 +48,31 @@ class BottchScore:
         self.converter.SetOutFormat('smi')
         self.verbose=verbose
         self.debug=debug
+        # SMARTS patterns used to assign mesomeric properties to groups
         self._mesomery_patterns = {
                 # SMARTS_pattern : [equivalent atoms idx list, contribution ]
                 '[$([#8;X1])]=*-[$([#8;X1])]' : [ [[0,2]], 1.5], # carboxylate, nitrate
-                #'[$([#7;X2](=*)(-*=*-*))]': [ [[0,1],[0,2],[2,3],[3,4]], 1.5 ],
-                '[$([#7;X2])](=*)(-*=[$(*-*)])': [ [[0,1],[0,2],[2,3]], 1.5 ],
-
-
-                #'[$([#8;X1])]~*~[$([#8;X1])]' : [ [0,2], 1.5], # carboxylate, nitrate
-                #'[$([#8;X1])]~*~[$([#8;X2,H1])]' : [ [0,2], 1.5], # carboxylate, nitrate
-                #'[$([#7;X2](=*)[*=*])]'
-                # '[$([#7;X2](=*)(-*=*(-*)))]' :  [ [[]],  1.5 ], # guanidine, azire
-
-                    
+                '[$([#7;X2](=*))](=*)(-*=*)'  : [ [[2,1]], 1.5 ], # azete ring
+                # NOTE:
+                # tautomeric forms of histidine, guanidine, and others are not considered due 
+                # to uncertainty in the implementation
+                #'[NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[0,2],[0,3],[2,3] ], 1.3 ],   # guanidine/guanidinium
+                #'[NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[2,3] ], 1.5 ],   # guanidine/guanidinium
+                #'[$([NHX3](C)(C))][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[0,2],[0,3],[2,3] ], 1.3 ],   # guanidine/guanidinium
                 #'[CH2X4]' # histidine
-                '[#6X3]1:' # imidazole
-                '[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:'
-                '[#6X3H]:'
-                '[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:'
-                '[#6X3H]1' :  [[[1,3]], 2.5],
+                #'[#6X3]1:' # imidazole
+                #'[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:'
+                #'[#6X3H]:'
+                #'[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:'
+                #'[#6X3H]1' :  [[[1,3]], 2.5],
                 }
 
     def score(self, mol, disable_mesomeric=False):
-        """ """
-        if self.debug:
+        """ method to be called to calculate the score """
+        if self.debug and not self.verbose:
             print("==========================================")
         if mol.NumAtoms()<2:
-            #print("*** WARNING: NO ATOMS FOR MOLECULE [%s] ***" % mol.GetTitle())
             return 0
-            #return
         self._initialize_mol(mol, disable_mesomeric)
         self._calculate_terms()
         self._calculate_score()
@@ -86,10 +81,9 @@ class BottchScore:
         return self._intrinsic_complexity
 
     def _initialize_mol(self, mol, disable_mesomeric):
-        """ perform initial operations on the molecule caching chemical
+        """ perform initial operations on the molecule caching chemical 
         information for aromatic and some tautomeric perceptions"""
         self.mol = mol
-        #if self.verbose:
         full = self.converter.WriteString(self.mol)
         self._smiles = full.split()[0]
         if self.debug: print("DEBUG> SMILES: %s" % self._smiles)
@@ -109,12 +103,12 @@ class BottchScore:
             matcher.Init(patt)
             found = matcher.Match(self.mol)
             if not found:
-                #print ("NADA")
                 continue
-            if self.debug: print("DEBUG> Matched pattern |%s|"% patt)
             found = [list(x) for x in matcher.GetUMapList()]
+            if self.debug: 
+                print("DEBUG> Matched pattern |%s|"% patt)
+                print("DEBUG> ", found)
             for f in found:
-                if self.debug: print("DEBUG> found pattern: ",f)
                 for pair in idx_pairs:
                     for idx in pair:
                         if self.debug: print("DEBUG> Assigning mesomery:",f, "->", f[idx])
@@ -147,26 +141,32 @@ class BottchScore:
         
 
     def print_table(self):
+        """ print the explicit table of all the terms for used to calculate complexity"""
         seq = [ 'di', 'ei', 'si', 'Vi', 'bi', 'complexity']
-        atom_list = list(self._equivalents.keys())
-        print("\t", "\t".join([str(x) for x in atom_list]))
-        print("===========================================================")
+        atom_list = [str(x) for x in list(self._equivalents.keys())]
+        atom_symbols = [ self.mol.GetAtom(x).GetAtomicNum() for x in self._equivalents.keys() ]
+        atom_symbols = [ ob.GetSymbol(x) for x in atom_symbols ]
+        atom_names = [ "%s-%s" % (x[0], x[1]) for x in zip(atom_symbols, atom_list) ]
+        print("\t", "\t".join(atom_names))
+        print("---------" * len(atom_symbols))
         for prop in seq:
             if prop=='complexity':
                 string = 'cmplx'
             else:
                 string = prop
             print("%s\t"% string, end=' ')
-            for i in atom_list:
+            for i in self._equivalents.keys():
                 if prop=='complexity':
-                    print("%2.1f\t" % self._indices[i][prop], end=' ')
+                    print("%2.2f\t" % self._indices[i][prop], end=' ')
                 else:
-                    print("%d\t" % self._indices[i][prop], end=' ')
+                    print("%1.1f\t" % self._indices[i][prop], end=' ')
             print("")
-        print('---------------------------------------')
+        print("---------" * len(atom_symbols))
+        print("SMILES               : %s" % self._smiles)
+        print("Name                 : %s"% (self.mol.GetTitle()))
         print("Intrinsic complexity : %2.2f" % self._intrinsic_complexity)
         print("Complexity/atom      : %2.2f" % (self._intrinsic_complexity/len(self._indices)))
-        print("===========================================================")
+        print("=========" * len(atom_symbols))
         
 
     def _calculate_score(self):
@@ -175,8 +175,6 @@ class BottchScore:
         """
         total_complexity = 0
         # eq.3 of ref.1, left side
-        if self.verbose:
-            print(">> %s" % self._smiles)
         for idx in list(self._indices.keys()):
             complexity = self._calculate_complexity(idx)
             self._indices[idx]['complexity'] = complexity
@@ -190,22 +188,19 @@ class BottchScore:
     def _calculate_complexity(self,idx):
         """ perform calculation of single complexity on a given index"""
         data = self._indices[idx]
-        if self.verbose:
-            try:
-                print(("complexity [%3d]:  %d * %d * %d log2( %d * %d) = %2.1f"  % (idx, 
-                    data['di'], data['ei'],data['si'], data['Vi'], data['bi'], 
-                    data['di']*data['ei']*data['si']*log(data['Vi']*data['bi'], 2)
-                    )))
-            except:
-                print("[ *** Error calculating complexity: atom_idx[%d] *** ]" % idx)
         try:
-            return data['di']*data['ei']*data['si']*log(data['Vi']*data['bi'], 2)
+            complexity = data['di']*data['ei']*data['si']*log(data['Vi']*data['bi'], 2)
         except:
             print("[ *** Error calculating complexity: atom_idx[%d] *** ]" % idx)
             return 0
 
+        if self.verbose:
+            print(("complexity [%3d]:  %d * %d * %d log2( %d * %d) = %2.1f"  % (idx, 
+                data['di'], data['ei'],data['si'], data['Vi'], data['bi'], complexity)))
+        return complexity
+
     def _calc_Vi(self, idx, atom):
-        """ """
+        """ calculate valence term of the atom"""
         valence = atom.GetTotalValence()
         charge = atom.GetFormalCharge()
         if self.debug: print("DEBUG> Vi[%3d]: v = %d | charge = %d"% (idx, valence, charge))
@@ -213,10 +208,9 @@ class BottchScore:
         self._indices[idx]['Vi'] = vi
 
     def _calc_bi_ei_si(self, idx, atom):
-        """ """
+        """ calculate atomic Bi (bond), Ei (equivalence/symmetry) and Si (chirality/asymmetry) terms """
         bi = 0
         ei = [self._get_atomic_num(atom)]
-        atom_idx = atom.GetIdx()
         si = 1
         if atom.IsChiral():
             si+=1
@@ -224,15 +218,13 @@ class BottchScore:
             neigh_idx = neigh.GetIdx()
             if self._is_hydrogen(neigh_idx):
                 continue
-            if atom_idx in self._mesomery_equivalence:
+            if idx in self._mesomery_equivalence:
                 # use mesomeric-corrected bond order
-                #print("FOUNX", atom_idx, atom_idx in self._mesomery_equivalence, self._mesomery_equivalence)
-                contribution = self._mesomery_equivalence[atom_idx]
+                contribution = self._mesomery_equivalence[idx]
             else:
                 # get bond order
                 bond = self.mol.GetBond(atom, neigh)
                 contribution = bond.GetBondOrder()
-            #print("BONDORDER B_i", contribution)
             bi += contribution
             # get neighbor element
             ei.append(self._get_atomic_num(neigh))
@@ -282,7 +274,6 @@ class BottchScore:
             identities and compact multiple
             mappings
         """
-        #itab = ob.OBIsitopeTable()
         self._equivalents = {}
         automorphs = ob.vvpairUIntUInt()
         mol_copy = ob.OBMol(self.mol)
@@ -312,10 +303,9 @@ class BottchScore:
             from pprint import pprint
             print("AUTOMORPHS", end='')
             pprint(self.automorphs)
-        #elif self.debug:
-        #    print("DEBUG> Automorphs:", self.automorphs)
 
     def _is_hydrogen(self, idx):
+        """ simple helper function to check if atom index is hydrogen """
         return self.mol.GetAtom(idx).GetAtomicNum()==1
 
 
@@ -331,8 +321,8 @@ if __name__=='__main__':
     parser.add_argument('-i', action="store", help='input structure; support all input formats supported by OB, including multi-structure formats', metavar='filename.ext', required=True)
     parser.add_argument('-m', action="store_true", help='disable mesomeric effect estimate', default=False)
     parser.add_argument('-p', action="store_true", help='generate PNG image of the structure', default=False)
+    parser.add_argument('-c', action="store_true", help='add a progressive counter to the list of results shown', default=False)
     parser.add_argument('-v', action="store_true", help='verbose mode; print the full table of the terms used to estimate the score, as described in the paper', default=False)
-    #parser.add_argument('-s', action="store", help='SMILES input mode')
     if len(sys.argv)<2:
         parser.print_help()
         sys.exit(1)
@@ -348,10 +338,12 @@ if __name__=='__main__':
     save_png = ARGS.p
     # mesomeric effect
     disable_mesomeric = ARGS.m
+    # show progressive molecule counter
+    show_counter = ARGS.c
+    counter=1
     # Parse format
     name, ext = os.path.splitext(infile)
     ext = ext[1:].lower()
-    counter=1
     # initialize mol parser
     mol_parser = ob.OBConversion()
     mol_parser.SetInAndOutFormats(ext,'smi')
@@ -365,7 +357,10 @@ if __name__=='__main__':
         # score the molecule
         score=bottch.score(mol, disable_mesomeric)
         if not verbose:
-            print("%d: %4.2f\t %s"% (counter,score,mol.GetTitle()))
+            if show_counter:
+                print("%d: %4.2f\t %s"% (counter,score,mol.GetTitle()))
+            else:
+                print("%4.2f\t %s"% (score,mol.GetTitle()))
         if save_png:
             name = mol.GetTitle()
             if name.strip()=="":
@@ -374,3 +369,4 @@ if __name__=='__main__':
             mol_parser.WriteFile(mol, '%s_image.png' % name)
         more = mol_parser.Read(mol)
         counter+=1
+

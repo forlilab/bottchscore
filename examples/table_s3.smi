@@ -1,0 +1,21 @@
+CC	ethane
+CCC	n-propane
+CCCC	n-butane
+CC(C)C	2-methylpropane
+CC(C)CC	2-methylbutane
+CCCCC	n=pentane
+CC(C)(C)C	2,2-dimethylpropane
+CC(C)CCC    2-methylpentane
+CC(C)(C)CC	2,2-dimethylbutane
+CCC(C)CC	3-methylpentane
+CCCCCC		n-hexane
+CC(C)C(C)C	2,3-dimethylbutane
+CC(C)[C@@H](C)CC 2,3-dimethylpentane
+CC[C@H](C)CCC 3-methylhexane
+CC(C)CCCC	2-methylexane
+CC(C)(C)CCC	2,2-dimethylpentane
+CC(C)(C)[C@@H](C)CC 2,2,3-trimethylpentane [ WRONG IN TABLE S3: chiral ]
+CCC(C)(C)CC	3,3-dimethylpentane
+CCCCCCC		n-heptane
+CCC(CC)CC	3-ethylpentane
+CC(C)CC(C)C	2,4-dimethylpentane
