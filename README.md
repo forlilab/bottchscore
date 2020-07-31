@@ -2,7 +2,7 @@
 Calculate Böttcher score on small molecules as described in [Demoret et al. (ChemRxiv 2020)](https://chemrxiv.org/articles/Synthesis_and_Mechanistic_Interrogation_of_Ginkgo_biloba_Chemical_Space_en_route_to_-Bilobalide/12132939) according to the definition from [Böttcher, J.Chem.Inf.Mod. 2016](https://pubs.acs.org/doi/pdf/10.1021/acs.jcim.5b00723)
 
 ```
-usage: bottchscore3.py [-h] -i filename.ext [-m] [-p] [-v]
+usage: bottchscore3.py [-h] -i filename.ext [-m] [-p] [-c] [-v]
 
 Tool to calculate Böttcher score on small molecules.
 
@@ -12,6 +12,7 @@ optional arguments:
                    including multi-structure formats
   -m               disable mesomeric effect estimate
   -p               generate PNG image of the structure
+  -c               add a progressive counter to the list of results shown
   -v               verbose mode; print the full table of the terms used to
                    estimate the score, as described in the paper
 ```
