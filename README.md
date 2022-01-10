@@ -19,3 +19,6 @@ optional arguments:
 Require OpenBabel v.3.0 or newer.
 
 All reading formats supported by [OpenBabel](http://openbabel.org/wiki/Main_Page) are supported. Although, there might be errors with molecule labels when using the ChemDraw format (just delete molecule labels).
+
+## Support
+For help and support, please subscribe to the [CCSB mailing list](https://autodocksuite.scripps.edu/support/).
