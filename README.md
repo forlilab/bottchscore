@@ -22,7 +22,7 @@ Require OpenBabel v.3.0 or newer.
 
 All reading formats supported by [OpenBabel](http://openbabel.org/wiki/Main_Page) are supported. Although, there might be errors with molecule labels when using the ChemDraw format (just delete molecule labels).
 
-This version of the program supports calculating scores for optical stereoisomers as well as E/Z double bond isomers as described in [Böttcher, J.Chem.Inf.Mod. 2016]; however, it does not support axial isomers (axial chirality).
+This version of the program supports calculating scores for optical stereoisomers as well as E/Z double bond isomers as described in [Böttcher, J.Chem.Inf.Mod. 2016](https://pubs.acs.org/doi/pdf/10.1021/acs.jcim.5b00723); however, it does not support axial isomers (axial chirality).
 
 Python function:
 ```
