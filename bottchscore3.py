@@ -177,7 +177,7 @@ class BottchScore:
         print("=========" * len(atom_symbols))
 
     def print_complexity_calculations(self):
-        """ prints out the explicit equation used for calculating the complexity score for the indexed atoms """
+        """ prints out the explicit equations used for calculating the complexity score for the indexed atoms """
         for idx in list(self._indices.keys()):
             data = self._indices[idx]
             print(("complexity [%3d]:  %d * %d * %d log2( %d * %d) = %2.1f"
@@ -379,6 +379,9 @@ def calculate_bottch_score_from_smiles(smiles: str, verbose_response=False, debu
     mol_input = pybel.readstring("smi", smiles)
     mol_ob = mol_input.OBMol
     bottch_ob = BottchScore(verbose_response, debug_arg, automorp_memory_maxsize)
+    # score = bottch.score(mol_ob)
+    # if score == 0:
+    #     return None
     return bottch_ob.score(mol_ob, disable_mesomer)
 
 
