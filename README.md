@@ -25,9 +25,9 @@ All reading formats supported by [OpenBabel](http://openbabel.org/wiki/Main_Page
 This version of the program supports calculating scores for optical stereoisomers as well as E/Z double bond isomers as described in [Böttcher, J.Chem.Inf.Mod. 2016]; however, it does not support axial isomers (axial chirality).
 
 Python function:
-'''
+```
 calculate_bottch_score_from_smiles(smiles: str, verbose_response=False, debug_arg=False, disable_mesomer=False, automorp_memory_maxsize=3000000) -> float
-'''
+```
 can be called to calculate a Böttcher score directly from SMILES passed to the function as a string. 
 
 ## Support
