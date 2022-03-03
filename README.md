@@ -15,6 +15,8 @@ optional arguments:
   -c               add a progressive counter to the list of results shown
   -v               verbose mode; print the full table of the terms used to
                    estimate the score, as described in the paper
+  -x X             specify the maximum memory that will be available for the automorphism/symmetry calculations; the
+                   default value is set to 3000000
 ```
 Require OpenBabel v.3.0 or newer.
 
