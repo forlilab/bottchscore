@@ -7,12 +7,12 @@
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
-# 
+#
 #     This program is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -23,65 +23,67 @@ import sys
 import os
 import argparse
 from collections import OrderedDict
+
 try:
     from openbabel import openbabel as ob
     from openbabel import pybel
-except:
+except ModuleNotFoundError:
     print("Error: OpenBabel >v.3 is required!")
     sys.exit(1)
 from math import log
 
+
 # ref: https://pubs.acs.org/doi/pdf/10.1021/acs.jcim.5b00723
 
-# TODO 
+# TODO
 # - missing atropisomers (https://en.wikipedia.org/wiki/Atropisomer)
 
 
 class BottchScore:
     def __init__(self, verbose=False, debug=False, automorp_memory_maxsize=3000000):
-        """ 
+        """
             TERMS:
-            
+
             d_i :   bonds with different chemical groups
             e_i :   unique list of non-H chemical elements involved in bonds
             s_i :   chirality bit
             v_i :   valence electrons (calculated as octet(8) - max number of bonds)
             b_i :   sum of all bond orders
-        
+
         """
         self.converter = ob.OBConversion()
         self.converter.SetOutFormat('smi')
-        self.verbose=verbose
-        self.debug=debug
-        self.automorp_memory_maxsize=automorp_memory_maxsize
+        self.verbose = verbose
+        self.debug = debug
+        self.automorp_memory_maxsize = automorp_memory_maxsize
         # SMARTS patterns used to assign mesomeric properties to groups
         self._mesomery_patterns = {
-                # SMARTS_pattern : [equivalent atoms idx list, contribution ]
-                '[$([#8;X1])]=*-[$([#8;X1])]' : [ [[0,2]], 1.5], # carboxylate, nitrate
-                '[$([#7;X2](=*))](=*)(-*=*)'  : [ [[2,1]], 1.5 ], # azete ring
-                # NOTE:
-                # tautomeric forms of histidine, guanidine, and others are not considered due 
-                # to uncertainty in the implementation
-                #'[NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[0,2],[0,3],[2,3] ], 1.3 ],   # guanidine/guanidinium
-                #'[NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[2,3] ], 1.5 ],   # guanidine/guanidinium
-                #'[$([NHX3](C)(C))][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[0,2],[0,3],[2,3] ], 1.3 ],   # guanidine/guanidinium
-                #'[CH2X4]' # histidine
-                #'[#6X3]1:' # imidazole
-                #'[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:'
-                #'[#6X3H]:'
-                #'[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:'
-                #'[#6X3H]1' :  [[[1,3]], 2.5],
-                }
+            # SMARTS_pattern : [equivalent atoms idx list, contribution ]
+            '[$([#8;X1])]=*-[$([#8;X1])]': [[[0, 2]], 1.5],  # carboxylate, nitrate
+            '[$([#7;X2](=*))](=*)(-*=*)': [[[2, 1]], 1.5],  # azete ring
+            # NOTE:
+            # tautomeric forms of histidine, guanidine, and others are not considered due
+            # to uncertainty in the implementation
+            # '[NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[0,2],[0,3],[2,3] ], 1.3 ],   # guanidine/guanidinium
+            # '[NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[2,3] ], 1.5 ],   # guanidine/guanidinium
+            # '[$([NHX3](C)(C))][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]': [ [[0,2],[0,3],[2,3] ], 1.3 ],   # guanidine/guanidinium
+            # '[CH2X4]' # histidine
+            # '[#6X3]1:' # imidazole
+            # '[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:'
+            # '[#6X3H]:'
+            # '[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:'
+            # '[#6X3H]1' :  [[[1,3]], 2.5],
+        }
 
     def score(self, mol, disable_mesomeric=False) -> float:
         """ method to be called to calculate the score """
         if self.debug and not self.verbose:
             print("==========================================")
-        if mol.NumAtoms()<2:
+        if mol.NumAtoms() < 2:
             return 0
         self._initialize_mol(mol, disable_mesomeric)
-        self._find_cistrans_double_bonds()
         self._calculate_terms()
+        self._find_cistrans_bond_atoms()
         self._calculate_score()
         if self.verbose:
             self.print_complexity_calculations()
@@ -89,7 +91,7 @@ class BottchScore:
         return self._intrinsic_complexity
 
     def _initialize_mol(self, mol, disable_mesomeric):
-        """ perform initial operations on the molecule caching chemical 
+        """ perform initial operations on the molecule caching chemical
         information for aromatic and some tautomeric perceptions"""
         self.mol = mol
         full = self.converter.WriteString(self.mol)
@@ -101,29 +103,29 @@ class BottchScore:
         self._mesomery_equivalence = {}
         if not disable_mesomeric:
             self._calc_mesomery()
-    
+
     def _calc_mesomery(self):
         """calculate atoms for which b_i value needs to be corrected"""
         matcher = ob.OBSmartsPattern()
         for patt, idx_info in self._mesomery_patterns.items():
-            #print("IDXINFO", idx_info)
+            # print("IDXINFO", idx_info)
             idx_pairs, contribution = idx_info
             matcher.Init(patt)
             found = matcher.Match(self.mol)
             if not found:
                 continue
             found = [list(x) for x in matcher.GetUMapList()]
-            if self.debug: 
-                print("DEBUG> Matched pattern |%s|"% patt)
+            if self.debug:
+                print("DEBUG> Matched pattern |%s|" % patt)
                 print("DEBUG> ", found)
             for f in found:
                 for pair in idx_pairs:
                     for idx in pair:
-                        if self.debug: print("DEBUG> Assigning mesomery:",f, "->", f[idx])
+                        if self.debug: print("DEBUG> Assigning mesomery:", f, "->", f[idx])
                         self._mesomery_equivalence[f[idx]] = contribution
                     p0 = f[pair[0]]
                     p1 = f[pair[1]]
-                    if self.debug: print("DEBUG> Updating automorphs:", p0,p1 )
+                    if self.debug: print("DEBUG> Updating automorphs:", p0, p1)
                     if not p0 in self.automorphs:
                         self.automorphs[p0] = set()
                     self.automorphs[p0].add(p1)
@@ -137,43 +139,43 @@ class BottchScore:
     def _calculate_terms(self):
         """ calculate the different terms contribution"""
 
-        for idx in range(1, self.mol.NumAtoms()+1):
+        for idx in range(1, self.mol.NumAtoms() + 1):
             # obabel numbering is 1-based
             atom = self.mol.GetAtom(idx)
             # hydrogen
             if self._is_hydrogen(idx):
                 continue
-            self._indices[idx]={}
+            self._indices[idx] = {}
             self._calc_di(idx, atom)
             self._calc_Vi(idx, atom)
             self._calc_bi_ei_si(idx, atom)
-    
+
     def print_table(self):
         """ print the explicit table of all the terms for used to calculate complexity"""
         seq = ['di', 'ei', 'si', 'Vi', 'bi', 'complexity']
         atom_list = [str(x) for x in list(self._equivalents.keys())]
-        atom_symbols = [ self.mol.GetAtom(x).GetAtomicNum() for x in self._equivalents.keys() ]
-        atom_symbols = [ ob.GetSymbol(x) for x in atom_symbols ]
-        atom_names = [ "%s-%s" % (x[0], x[1]) for x in zip(atom_symbols, atom_list) ]
+        atom_symbols = [self.mol.GetAtom(x).GetAtomicNum() for x in self._equivalents.keys()]
+        atom_symbols = [ob.GetSymbol(x) for x in atom_symbols]
+        atom_names = ["%s-%s" % (x[0], x[1]) for x in zip(atom_symbols, atom_list)]
         print("\t", "\t".join(atom_names))
         print("---------" * len(atom_symbols))
         for prop in seq:
-            if prop=='complexity':
+            if prop == 'complexity':
                 string = 'cmplx'
             else:
                 string = prop
-            print("%s\t"% string, end=' ')
+            print("%s\t" % string, end=' ')
             for i in self._equivalents.keys():
-                if prop=='complexity':
+                if prop == 'complexity':
                     print("%2.2f\t" % self._indices[i][prop], end=' ')
                 else:
                     print("%1.1f\t" % self._indices[i][prop], end=' ')
             print("")
         print("---------" * len(atom_symbols))
         print("SMILES               : %s" % self._smiles)
-        print("Name                 : %s"% (self.mol.GetTitle()))
+        print("Name                 : %s" % (self.mol.GetTitle()))
         print("Intrinsic complexity : %2.2f" % self._intrinsic_complexity)
-        print("Complexity/atom      : %2.2f" % (self._intrinsic_complexity/len(self._indices)))
+        print("Complexity/atom      : %2.2f" % (self._intrinsic_complexity / len(self._indices)))
         print("=========" * len(atom_symbols))
 
     def print_complexity_calculations(self):
@@ -182,6 +184,7 @@ class BottchScore:
             data = self._indices[idx]
             print(("complexity [%3d]:  %d * %d * %d log2( %d * %d) = %2.1f"
                    % (idx, data['di'], data['ei'], data['si'], data['Vi'], data['bi'], data['complexity'])))
+        print()
 
     def _calculate_score(self):
         """ calculate total complexity with a consideration for the double bond isomers
@@ -221,49 +224,121 @@ class BottchScore:
                 total_complexity -= 0.5 * self._indices[idx]['complexity'] / (len(eq_groups))
         self._intrinsic_complexity = total_complexity
 
-    def _calculate_complexity(self,idx):
+    def _calculate_complexity(self, idx):
         """ perform calculation of single complexity on a given index"""
         data = self._indices[idx]
         try:
-            complexity = data['di']*data['ei']*data['si']*log(data['Vi']*data['bi'], 2)
+            complexity = data['di'] * data['ei'] * data['si'] * log(data['Vi'] * data['bi'], 2)
         except:
             print("[ *** Error calculating complexity: atom_idx[%d] *** ]" % idx)
             return 0
         return complexity
 
-    def _find_cistrans_double_bonds(self):
-        """ 
-        Finds atoms within double bonds that allow for cis-trans/E-Z isomers
-        Needed for adjusting the s_i term for geometric isomers
-        """
+    def _find_cistrans_bond_atoms(self):
+        """ finds indices of atoms that are inside double bonds allowing for E/Z isomers """
         self._cistrans_double_bond_atoms = []
+        for bond in self._find_potential_cistrans_bonds():
+            db_atom_idx1 = bond.GetBeginAtom().GetIdx()  # finds index of the first atom in the double bond
+            db_atom_idx2 = bond.GetEndAtom().GetIdx()  # finds index of the second atom in the double bond
+            double_bond_atoms = (self.mol.GetAtom(db_atom_idx1), self.mol.GetAtom(db_atom_idx2))
+            register_cistrans = False
+
+            # analysing one side of the double bond at a time, checking if the groups are equivalent
+            for index, db_atom in enumerate(double_bond_atoms):
+                # initially the other atom in the double bond is added to the exclusion list
+                # for finding the atom neighbours
+                self.excluded_atoms = [double_bond_atoms[index - 1]]
+                # neighbours of one of the double bonds atoms are found (excluding the other atom in the double bond)
+                neigh_atoms_db = self._find_neighbours(db_atom)
+                neighbours_atom_numbers_db = self._find_neighbours(db_atom, return_atomic_nums=True)
+
+                # checking if the atoms directly attached to one side of the double bond are different
+                if len(set(neighbours_atom_numbers_db)) > 1 or len(neighbours_atom_numbers_db) == 1:
+                    register_cistrans = True
+                # if the atoms directly attached to the double bond are the same, further analysis of the attached groups is made
+                else:
+                    branch1_atoms = [neigh_atoms_db[0]]  # currently analysed atoms in the first group attached to one side of the double bond
+                    branch2_atoms = [neigh_atoms_db[1]]  # currently analysed atoms in the second group attached the same side of the double bond
+                    branches_equal = True
+                    while branches_equal:
+                        # add already analysed branch atoms to the exclusion list, to travel only in one direction
+                        # with the analysis; also prevents infinite loops with cyclic groups attached to the double bond
+                        self.excluded_atoms += branch1_atoms + branch2_atoms
+                        branches_equal = self._branch_levels_are_equal(branch1_atoms, branch2_atoms)
+                        # find neighbours of the currently analysed atoms in the branch/group
+                        branch1_atoms = [neigh for atom in branch1_atoms for neigh in self._find_neighbours(atom)]
+                        branch2_atoms = [neigh for atom in branch2_atoms for neigh in self._find_neighbours(atom)]
+                        if not branch1_atoms and not branch2_atoms:
+                            break  # finishing looping if there are no more atoms in the analysed branches/groups
+                    if branches_equal:
+                        # means that it cannot be E/Z isomer; further analysis of the double bond substitution is stopped
+                        register_cistrans = False
+                        break
+                    else:
+                        register_cistrans = True
+            if register_cistrans:
+                self._cistrans_double_bond_atoms.append((db_atom_idx1, db_atom_idx2))  # atom idxs are added as tuples
+
+    def _find_potential_cistrans_bonds(self):
+        """ finds atom indexes within double bonds that allow for potential cis-trans/E-Z isomers """
+        double_bonds = []
         facade = ob.OBStereoFacade(self.mol)
         for bond in ob.OBMolBondIter(self.mol):
             mid = bond.GetId()
             if facade.HasCisTransStereo(mid):
                 cistrans = facade.GetCisTransStereo(mid)
                 if cistrans.IsSpecified():
-                    self._cistrans_double_bond_atoms.append((bond.GetBeginAtom().GetIdx(), bond.GetEndAtom().GetIdx()))
+                    double_bonds.append(bond)
+        return double_bonds
+
+    def _branch_levels_are_equal(self, branch1_atoms, branch2_atoms):
+        """ checks if atoms in the analysed compound branch levels are equal/the same """
+        branch1_atomic_nums = sorted([atom_num for atom in branch1_atoms for atom_num in
+                                      self._find_neighbours(atom, return_atomic_nums=True)])
+        branch2_atomic_nums = sorted([atom_num for atom in branch2_atoms for atom_num in
+                                      self._find_neighbours(atom, return_atomic_nums=True)])
+        branch1_bond_orders = sorted([self._indices[atom.GetIdx()]['bi'] for atom in branch1_atoms])
+        branch2_bond_orders = sorted([self._indices[atom.GetIdx()]['bi'] for atom in branch2_atoms])
+
+        # checks if the atomic numbers and bond orders are the same in both currently analysed atom branches
+        if branch1_atomic_nums == branch2_atomic_nums and branch1_bond_orders == branch2_bond_orders:
+            return True  # atoms/bonds orders in the branch level are equal
+        return False  # atoms/bond orders in the branch level are different
+
+    def _find_neighbours(self, atom, return_atomic_nums=False):
+        """
+        Finds atom objects or atomic numbers of direct atom neighbours.
+        Returns only neighbours that are not explicitly excluded.
+        """
+        neigh_atoms = []
+        neigh_atomic_numbers = []
+        for neigh in ob.OBAtomAtomIter(atom):
+            if neigh in self.excluded_atoms:  # only searches for neighbours that are not in the excluded list
+                continue
+            neigh_atoms.append(neigh)
+            neigh_atomic_numbers.append(self._get_atomic_num(neigh))
+        if return_atomic_nums:
+            return neigh_atomic_numbers  # returns atomic numbers of the neighbours
+        return neigh_atoms  # otherwise, returns the atomic numbers of the neighbours
 
     def _calc_Vi(self, idx, atom):
         """ calculate valence term of the atom"""
         valence = atom.GetTotalValence()
         charge = atom.GetFormalCharge()
-        if self.debug: print("DEBUG> Vi[%3d]: v = %d | charge = %d"% (idx, valence, charge))
+        if self.debug: print("DEBUG> Vi[%3d]: v = %d | charge = %d" % (idx, valence, charge))
         vi = 8 - valence + charge
         self._indices[idx]['Vi'] = vi
 
     def _calc_bi_ei_si(self, idx, atom):
-        """ 
-        Calculate atomic Bi (bond), Ei (equivalence/symmetry) and Si (chirality/asymmetry) terms 
+        """
+        Calculate atomic Bi (bond), Ei (equivalence/symmetry) and Si (chirality/asymmetry) terms
         Does not account for geometric isomers
         """
         bi = 0
         ei = [self._get_atomic_num(atom)]
         si = 1
         if atom.IsChiral():  # does not take into consideration axial assymetry or cis-trans isomers  <---
-            si+=1
-            # print(f"Atom with id:{idx} is a stereocentre")
+            si += 1
         for neigh in ob.OBAtomAtomIter(atom):
             neigh_idx = neigh.GetIdx()
             if self._is_hydrogen(neigh_idx):
@@ -284,11 +359,11 @@ class BottchScore:
 
     @staticmethod
     def _get_atomic_num(atom):
-        """ function to return the atomic number taking into account 
+        """ function to return the atomic number taking into account
             isotope
         """
         isotope = atom.GetIsotope()
-        if not isotope==0:
+        if not isotope == 0:
             return isotope
         return atom.GetAtomicNum()
 
@@ -299,10 +374,10 @@ class BottchScore:
         self._equivalents[idx] = []
         if not idx in self._equivalents:
             if idx in self.automorphs:
-                if len(set(self._equivalents.keys()) & self.automorphs[idx])==0:
-                    self._equivalents[idx]=self.automorphs[idx]
+                if len(set(self._equivalents.keys()) & self.automorphs[idx]) == 0:
+                    self._equivalents[idx] = self.automorphs[idx]
             else:
-                self._equivalents[idx]=set()
+                self._equivalents[idx] = set()
         if idx in self.automorphs:
             for u in self.automorphs[idx]:
                 self._equivalents[idx].append(u)
@@ -313,7 +388,7 @@ class BottchScore:
                 continue
             neigh_idx = neigh.GetIdx()
             if (neigh_idx in self.automorphs):
-                if len(set(groups) & self.automorphs[neigh_idx])>0:
+                if len(set(groups) & self.automorphs[neigh_idx]) > 0:
                     continue
             groups.append(neigh_idx)
         self._indices[idx]['di'] = len(groups)
@@ -358,10 +433,10 @@ class BottchScore:
 
     def _is_hydrogen(self, idx):
         """ simple helper function to check if atom index is hydrogen """
-        return self.mol.GetAtom(idx).GetAtomicNum()==1
+        return self.mol.GetAtom(idx).GetAtomicNum() == 1
 
 
-def calculate_bottch_score_from_smiles(smiles: str, verbose_response=False, debug_arg=False, disable_mesomer=False,
+def calculate_bottchscore_from_smiles(smiles: str, verbose_response=False, debug_arg=False, disable_mesomer=False,
                                        automorp_memory_maxsize=3000000) -> float:
     """
     Calculates a Bottcher score for a compound provided as a SMILES string.
@@ -403,7 +478,7 @@ if __name__ == "__main__":
                         default=False)
     parser.add_argument('-x', action="store",
                         help='specify the maximum memory that will be available for the automorphism/symmetry calculations; '
-                             'the default value is set to 3000000', default=3000000)
+                             'the default value is set to 3000000', metavar='MaxMemory', default=3000000)
 
     if len(sys.argv) < 2:
         parser.print_help()
