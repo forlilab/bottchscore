@@ -2,7 +2,7 @@
 Calculate Böttcher score on small molecules as described in [Demoret et al. (ChemRxiv 2020)](https://chemrxiv.org/articles/Synthesis_and_Mechanistic_Interrogation_of_Ginkgo_biloba_Chemical_Space_en_route_to_-Bilobalide/12132939) according to the definition from [Böttcher, J.Chem.Inf.Mod. 2016](https://pubs.acs.org/doi/pdf/10.1021/acs.jcim.5b00723)
 
 ```
-usage: bottchscore3.py [-h] -i filename.ext [-m] [-p] [-c] [-v] [-x X]
+usage: bottchscore3.py [-h] -i filename.ext [-m] [-p] [-c] [-v] [-x MaxMemory]
 
 Tool to calculate Böttcher score on small molecules.
 
@@ -15,7 +15,7 @@ optional arguments:
   -c               add a progressive counter to the list of results shown
   -v               verbose mode; print the full table of the terms used to
                    estimate the score, as described in the paper
-  -x X             specify the maximum memory that will be available for the automorphism/symmetry calculations; the
+  -x MaxMemory     specify the maximum memory that will be available for the automorphism/symmetry calculations; the
                    default value is set to 3000000
 ```
 Require OpenBabel v.3.0 or newer.
@@ -26,7 +26,7 @@ This version of the program supports calculating scores for optical stereoisomer
 
 Python function:
 ```
-calculate_bottch_score_from_smiles(smiles: str, verbose_response=False, debug_arg=False, disable_mesomer=False, automorp_memory_maxsize=3000000) -> float
+calculate_bottchscore_from_smiles(smiles: str, verbose_response=False, debug_arg=False, disable_mesomer=False, automorp_memory_maxsize=3000000) -> float
 ```
 can be called to calculate a Böttcher score for a molecule directly from SMILES passed to the function as a string. 
 
