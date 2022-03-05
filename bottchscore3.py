@@ -454,9 +454,6 @@ def calculate_bottchscore_from_smiles(smiles: str, verbose_response=False, debug
     mol_input = pybel.readstring("smi", smiles)
     mol_ob = mol_input.OBMol
     bottch_ob = BottchScore(verbose_response, debug_arg, automorp_memory_maxsize)
-    # score = bottch.score(mol_ob)
-    # if score == 0:
-    #     return None
     return bottch_ob.score(mol_ob, disable_mesomer)
 
 
