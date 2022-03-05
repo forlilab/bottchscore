@@ -28,7 +28,7 @@ Python function:
 ```
 calculate_bottch_score_from_smiles(smiles: str, verbose_response=False, debug_arg=False, disable_mesomer=False, automorp_memory_maxsize=3000000) -> float
 ```
-can be called to calculate a Böttcher score directly from SMILES passed to the function as a string. 
+can be called to calculate a Böttcher score for a molecule directly from SMILES passed to the function as a string. 
 
 ## Support
 For help and support, please subscribe to the [CCSB mailing list](https://autodocksuite.scripps.edu/support/).
