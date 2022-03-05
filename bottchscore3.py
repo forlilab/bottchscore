@@ -258,7 +258,7 @@ class BottchScore:
                 # if the atoms directly attached to the double bond are the same, further analysis of the attached groups is made
                 else:
                     branch1_atoms = [neigh_atoms_db[0]]  # currently analysed atoms in the first group attached to one side of the double bond
-                    branch2_atoms = [neigh_atoms_db[1]]  # currently analysed atoms in the second group attached the same side of the double bond
+                    branch2_atoms = [neigh_atoms_db[1]]  # currently analysed atoms in the second group attached to the same side of the double bond
                     branches_equal = True
                     while branches_equal:
                         # add already analysed branch atoms to the exclusion list, to travel only in one direction
