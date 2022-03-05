@@ -17,7 +17,7 @@
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Modified by: Adrian Krzyzanowski, March 2022, Waldmann Lab (adrian.krzyzanowski@mpi-dortmund.mpg.de)
-# Added the s_i (chirality/stereoisomer) term modification for the E/Z isomers.
+# Added E/Z isomer detection and the s_i (chirality/stereoisomer) term modification for the E/Z isomers.
 
 import sys
 import os
