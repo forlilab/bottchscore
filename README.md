@@ -30,10 +30,6 @@ calculate_bottchscore_from_smiles(smiles: str, verbose_response=False, debug_arg
 ```
 can be called to calculate a Böttcher score for a molecule directly from SMILES passed to the function as a string. 
 
-## Support
-For help and support, please subscribe to the [CCSB mailing list](https://autodocksuite.scripps.edu/support/).
-
-
 The modified script returns the same scores as the original script (see the 'Calculated Examples' folder), however the accuracy improvement is seen for such molecules as:
 ```
 SMILES                                            Original Score               New Score
@@ -50,3 +46,7 @@ SMILES                                Original Score              New Score
 C/C=C(C)/C                            19.17                       19.17
 CC/C=C1CCCCC/1                        38.17                       38.17 
 ```
+
+## Support
+For help and support, please subscribe to the [CCSB mailing list](https://autodocksuite.scripps.edu/support/).
+
