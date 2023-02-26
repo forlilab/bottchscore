@@ -18,6 +18,8 @@
 
 # Modified by: Adrian Krzyzanowski, March 2022, Waldmann Lab (adrian.krzyzanowski@mpi-dortmund.mpg.de)
 # Added E/Z isomer detection and the s_i (chirality/stereoisomer) term modification for the E/Z isomers.
+# Added option to change the maximum memory size for automorphic caulculations (for highly symmetrical molecules)
+# Added function 'calculate_bottchscore_from_smiles' for easy score claculation from external scripts
 
 import sys
 import os
