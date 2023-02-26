@@ -47,6 +47,4 @@ C/C=C(C)/C                            19.17                       19.17
 CC/C=C1CCCCC/1                        38.17                       38.17 
 ```
 
-## Support
-For help and support, please subscribe to the [CCSB mailing list](https://autodocksuite.scripps.edu/support/).
 
