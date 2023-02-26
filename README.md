@@ -1,4 +1,4 @@
-# bottchscore (Imporoved Accuracy)
+# bottchscore (Improved Accuracy)
 Calculate Böttcher score on small molecules as described in [Demoret et al. (ChemRxiv 2020)](https://chemrxiv.org/articles/Synthesis_and_Mechanistic_Interrogation_of_Ginkgo_biloba_Chemical_Space_en_route_to_-Bilobalide/12132939) according to the definition from [Böttcher, J.Chem.Inf.Mod. 2016](https://pubs.acs.org/doi/pdf/10.1021/acs.jcim.5b00723). This repository contains a modified script originally developed by ForliLab (https://github.com/forlilab/bottchscore). The modified script accounts for E/Z double bond isomers and changes the s_i term accordingly for the appropriate atom. An option to change the maximum memory size for automorphic calculations was also added, allowing to aviod the memory limit errors for highly symmetrical molecules. The complexity score can also be calculated by directly calling the appropriate function from another script. 
 
 ```
